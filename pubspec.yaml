@@ -43,6 +43,7 @@ dependencies:
   encrypt: ^5.0.1
   image_picker: ^1.2.1
   flutter_local_notifications: ^17.0.0
+  emoji_picker_flutter: ^4.4.0
 
 dev_dependencies:
   flutter_test:

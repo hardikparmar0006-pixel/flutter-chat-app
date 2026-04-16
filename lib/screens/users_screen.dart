@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'chat_screen.dart';
@@ -11,21 +13,37 @@ class UsersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Users")),
-      body: StreamBuilder(
+
+      body: StreamBuilder<QuerySnapshot>(
         stream: firestore.getUsers(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return Center(child: Text("No users"));
+
+          /// 🔄 loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          /// ❌ no data
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text("No users found"));
+          }
 
           final users = snapshot.data!.docs;
 
-          return ListView(
-            children: users.map((doc) {
-              final uid = doc['uid'];
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final doc = users[index];
 
-              if (uid == auth.uid) return SizedBox(); // skip self
+              final uid = doc['uid'];
+              final email = doc['email'];
+
+              /// ❗ khud ko hide karo
+              if (uid == auth.uid) return SizedBox();
 
               return ListTile(
-                title: Text(doc['email']),
+                leading: CircleAvatar(child: Text(email[0].toUpperCase())),
+                title: Text(email),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -35,7 +53,7 @@ class UsersScreen extends StatelessWidget {
                   );
                 },
               );
-            }).toList(),
+            },
           );
         },
       ),

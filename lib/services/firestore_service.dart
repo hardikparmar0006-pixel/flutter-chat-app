@@ -1,57 +1,51 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreService {
-  final _db = FirebaseFirestore.instance;
+  final db = FirebaseFirestore.instance;
 
-  // 🔥 Generate chatId
+  /// 🔥 CHAT ID FIX
   String getChatId(String uid1, String uid2) {
     return uid1.compareTo(uid2) > 0
-        ? uid1 + "_" + uid2
-        : uid2 + "_" + uid1;
+        ? "${uid1}_$uid2"
+        : "${uid2}_$uid1";
   }
 
-  // 🔥 Send Message + Create Chat if not exists
-  Future<void> sendMessage(String chatId, Map<String, dynamic> message) async {
-    final chatRef = _db.collection('chats').doc(chatId);
-
-    final doc = await chatRef.get();
-
-    if (!doc.exists) {
-      await chatRef.set({
-        "participants": [message['sender'], message['receiver']],
-        "lastMessage": message['message'],
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    } else {
-      await chatRef.update({
-        "lastMessage": message['message'],
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    }
-
-    await chatRef.collection('messages').add(message);
-  }
-
-  // 🔥 Get messages
-  Stream<QuerySnapshot> getMessages(String chatId) {
-    return _db
-        .collection('chats')
+  /// 🔥 SEND MESSAGE
+  Future<void> sendMessage(String chatId, Map<String, dynamic> data) async {
+    await db.collection("chats")
         .doc(chatId)
-        .collection('messages')
-        .orderBy('time')
+        .collection("messages")
+        .add(data);
+
+    /// chat list ke liye
+    await db.collection("chats").doc(chatId).set({
+      "participants": [data['sender'], data['receiver']],
+      "lastMessage": data['type'] == "image" ? "📷 Image" : data['message'],
+      "time": DateTime.now(),
+    });
+  }
+
+  /// 🔥 GET MESSAGES
+  Stream<QuerySnapshot> getMessages(String chatId) {
+    return db.collection("chats")
+        .doc(chatId)
+        .collection("messages")
+        .orderBy("time", descending: true)
         .snapshots();
   }
 
-  // 🔥 Get chat list
+  /// 🔥 CHAT LIST
   Stream<QuerySnapshot> getChats(String uid) {
-    return _db
-        .collection('chats')
-        .where('participants', arrayContains: uid)
+    return db.collection("chats")
+        .where("participants", arrayContains: uid)
+        .orderBy("time", descending: true)
         .snapshots();
   }
 
-  // 🔥 Get all users
+
   Stream<QuerySnapshot> getUsers() {
-    return _db.collection('users').snapshots();
+    return FirebaseFirestore.instance
+        .collection("users")
+        .snapshots();
   }
 }

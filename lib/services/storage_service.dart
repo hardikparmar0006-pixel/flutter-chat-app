@@ -5,8 +5,12 @@ class StorageService {
   final storage = FirebaseStorage.instance;
 
   Future<String> uploadImage(File file) async {
-    final ref = storage.ref().child("chat_images/${DateTime.now()}");
+    final name = DateTime.now().millisecondsSinceEpoch.toString();
+
+    final ref = storage.ref().child("chat_images/$name.jpg");
+
     await ref.putFile(file);
+
     return await ref.getDownloadURL();
   }
 }
